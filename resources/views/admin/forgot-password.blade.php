@@ -1,0 +1,1 @@
+@include('admin.password-shell', ['title' => 'Forgot Password', 'subtitle' => 'Enter your admin email to receive a reset link.', 'route' => route('admin.forgot-password.store'), 'fields' => 'forgot'])

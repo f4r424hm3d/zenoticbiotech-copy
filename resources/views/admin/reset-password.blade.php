@@ -1,0 +1,1 @@
+@include('admin.password-shell', ['title' => 'Reset Password', 'subtitle' => 'Choose a new admin password.', 'route' => route('admin.reset-password.store'), 'fields' => 'reset', 'token' => $token, 'email' => $email])

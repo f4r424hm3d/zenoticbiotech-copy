@@ -1,0 +1,86 @@
+<?php
+
+use App\Http\Controllers\Web\AdminPageController;
+use App\Http\Controllers\Web\PublicPageController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', [PublicPageController::class, 'home'])->name('home');
+Route::get('/about', [PublicPageController::class, 'about'])->name('about');
+Route::get('/leadership', [PublicPageController::class, 'leadership'])->name('leadership');
+Route::get('/products', [PublicPageController::class, 'products'])->name('products');
+Route::get('/products/{product:slug}', [PublicPageController::class, 'productDetail'])->name('products.show');
+Route::get('/services', [PublicPageController::class, 'services'])->name('services');
+Route::get('/services/{service:slug}', [PublicPageController::class, 'serviceDetail'])->name('services.show');
+Route::get('/research', [PublicPageController::class, 'research'])->name('research');
+Route::get('/quality', [PublicPageController::class, 'quality'])->name('quality');
+Route::get('/careers', [PublicPageController::class, 'careers'])->name('careers');
+Route::get('/contact', [PublicPageController::class, 'contact'])->name('contact');
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/login', [AdminPageController::class, 'login'])->name('login');
+    Route::post('/login', [AdminPageController::class, 'authenticate'])->name('login.store')->middleware('throttle:20,15');
+    Route::get('/forgot-password', [AdminPageController::class, 'forgotPassword'])->name('forgot-password');
+    Route::post('/forgot-password', [AdminPageController::class, 'sendResetLink'])->name('forgot-password.store')->middleware('throttle:5,15');
+    Route::get('/reset-password', [AdminPageController::class, 'resetPassword'])->name('reset-password');
+    Route::post('/reset-password', [AdminPageController::class, 'updateResetPassword'])->name('reset-password.store')->middleware('throttle:10,15');
+
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::post('/logout', [AdminPageController::class, 'logout'])->name('logout');
+        Route::get('/', [AdminPageController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [AdminPageController::class, 'profile'])->name('profile');
+        Route::post('/profile/password', [AdminPageController::class, 'updatePassword'])->name('profile.password');
+        Route::get('/products', [AdminPageController::class, 'products'])->name('products');
+        Route::get('/products/new', [AdminPageController::class, 'createProduct'])->name('products.create');
+        Route::post('/products', [AdminPageController::class, 'storeProduct'])->name('products.store');
+        Route::get('/products/{product}/edit', [AdminPageController::class, 'editProduct'])->name('products.edit');
+        Route::put('/products/{product}', [AdminPageController::class, 'updateProduct'])->name('products.update');
+        Route::post('/products/{product}/toggle', [AdminPageController::class, 'toggleProduct'])->name('products.toggle');
+        Route::delete('/products/{product}', [AdminPageController::class, 'deleteProduct'])->name('products.destroy');
+        Route::get('/products/{product}/contents', [AdminPageController::class, 'productContents'])->name('products.contents');
+        Route::post('/products/{product}/contents', [AdminPageController::class, 'storeProductContent'])->name('products.contents.store');
+        Route::get('/products/{product}/contents/{content}/edit', [AdminPageController::class, 'editProductContent'])->name('products.contents.edit');
+        Route::put('/products/{product}/contents/{content}', [AdminPageController::class, 'updateProductContent'])->name('products.contents.update');
+        Route::delete('/products/{product}/contents/{content}', [AdminPageController::class, 'deleteProductContent'])->name('products.contents.destroy');
+        Route::get('/products/{product}/faqs', [AdminPageController::class, 'productFaqs'])->name('products.faqs');
+        Route::post('/products/{product}/faqs', [AdminPageController::class, 'storeProductFaq'])->name('products.faqs.store');
+        Route::get('/products/{product}/faqs/{faq}/edit', [AdminPageController::class, 'editProductFaq'])->name('products.faqs.edit');
+        Route::put('/products/{product}/faqs/{faq}', [AdminPageController::class, 'updateProductFaq'])->name('products.faqs.update');
+        Route::delete('/products/{product}/faqs/{faq}', [AdminPageController::class, 'deleteProductFaq'])->name('products.faqs.destroy');
+        Route::get('/categories', [AdminPageController::class, 'categories'])->name('categories');
+        Route::post('/categories', [AdminPageController::class, 'storeCategory'])->name('categories.store');
+        Route::put('/categories/{category}', [AdminPageController::class, 'updateCategory'])->name('categories.update');
+        Route::delete('/categories/{category}', [AdminPageController::class, 'deleteCategory'])->name('categories.destroy');
+        Route::get('/services', [AdminPageController::class, 'services'])->name('services');
+        Route::get('/services/new', [AdminPageController::class, 'createService'])->name('services.create');
+        Route::post('/services', [AdminPageController::class, 'storeService'])->name('services.store');
+        Route::get('/services/{service}/edit', [AdminPageController::class, 'editService'])->name('services.edit');
+        Route::put('/services/{service}', [AdminPageController::class, 'updateService'])->name('services.update');
+        Route::post('/services/{service}/toggle', [AdminPageController::class, 'toggleService'])->name('services.toggle');
+        Route::delete('/services/{service}', [AdminPageController::class, 'deleteService'])->name('services.destroy');
+        Route::get('/services/{service}/contents', [AdminPageController::class, 'serviceContents'])->name('services.contents');
+        Route::post('/services/{service}/contents', [AdminPageController::class, 'storeServiceContent'])->name('services.contents.store');
+        Route::get('/services/{service}/contents/{content}/edit', [AdminPageController::class, 'editServiceContent'])->name('services.contents.edit');
+        Route::put('/services/{service}/contents/{content}', [AdminPageController::class, 'updateServiceContent'])->name('services.contents.update');
+        Route::delete('/services/{service}/contents/{content}', [AdminPageController::class, 'deleteServiceContent'])->name('services.contents.destroy');
+        Route::get('/services/{service}/faqs', [AdminPageController::class, 'serviceFaqs'])->name('services.faqs');
+        Route::post('/services/{service}/faqs', [AdminPageController::class, 'storeServiceFaq'])->name('services.faqs.store');
+        Route::get('/services/{service}/faqs/{faq}/edit', [AdminPageController::class, 'editServiceFaq'])->name('services.faqs.edit');
+        Route::put('/services/{service}/faqs/{faq}', [AdminPageController::class, 'updateServiceFaq'])->name('services.faqs.update');
+        Route::delete('/services/{service}/faqs/{faq}', [AdminPageController::class, 'deleteServiceFaq'])->name('services.faqs.destroy');
+        Route::get('/static-page-seos', [AdminPageController::class, 'staticPageSeos'])->name('static-page-seos');
+        Route::post('/static-page-seos', [AdminPageController::class, 'storeStaticPageSeo'])->name('static-page-seos.store');
+        Route::get('/static-page-seos/{staticPageSeo}/edit', [AdminPageController::class, 'editStaticPageSeo'])->name('static-page-seos.edit');
+        Route::put('/static-page-seos/{staticPageSeo}', [AdminPageController::class, 'updateStaticPageSeo'])->name('static-page-seos.update');
+        Route::delete('/static-page-seos/{staticPageSeo}', [AdminPageController::class, 'deleteStaticPageSeo'])->name('static-page-seos.destroy');
+        Route::get('/dynamic-page-seos', [AdminPageController::class, 'dynamicPageSeos'])->name('dynamic-page-seos');
+        Route::post('/dynamic-page-seos', [AdminPageController::class, 'storeDynamicPageSeo'])->name('dynamic-page-seos.store');
+        Route::get('/dynamic-page-seos/{dynamicPageSeo}/edit', [AdminPageController::class, 'editDynamicPageSeo'])->name('dynamic-page-seos.edit');
+        Route::put('/dynamic-page-seos/{dynamicPageSeo}', [AdminPageController::class, 'updateDynamicPageSeo'])->name('dynamic-page-seos.update');
+        Route::delete('/dynamic-page-seos/{dynamicPageSeo}', [AdminPageController::class, 'deleteDynamicPageSeo'])->name('dynamic-page-seos.destroy');
+        Route::get('/default-og-images', [AdminPageController::class, 'defaultOgImages'])->name('default-og-images');
+        Route::post('/default-og-images', [AdminPageController::class, 'storeDefaultOgImage'])->name('default-og-images.store');
+        Route::get('/default-og-images/{defaultOgImage}/edit', [AdminPageController::class, 'editDefaultOgImage'])->name('default-og-images.edit');
+        Route::put('/default-og-images/{defaultOgImage}', [AdminPageController::class, 'updateDefaultOgImage'])->name('default-og-images.update');
+        Route::delete('/default-og-images/{defaultOgImage}', [AdminPageController::class, 'deleteDefaultOgImage'])->name('default-og-images.destroy');
+    });
+});

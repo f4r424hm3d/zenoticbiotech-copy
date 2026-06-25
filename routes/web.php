@@ -15,6 +15,7 @@ Route::get('/research', [PublicPageController::class, 'research'])->name('resear
 Route::get('/quality', [PublicPageController::class, 'quality'])->name('quality');
 Route::get('/careers', [PublicPageController::class, 'careers'])->name('careers');
 Route::get('/contact', [PublicPageController::class, 'contact'])->name('contact');
+Route::post('/contact', [PublicPageController::class, 'storeContact'])->name('contact.store')->middleware('throttle:5,1');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminPageController::class, 'login'])->name('login');
@@ -46,6 +47,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/products/{product}/faqs/{faq}/edit', [AdminPageController::class, 'editProductFaq'])->name('products.faqs.edit');
         Route::put('/products/{product}/faqs/{faq}', [AdminPageController::class, 'updateProductFaq'])->name('products.faqs.update');
         Route::delete('/products/{product}/faqs/{faq}', [AdminPageController::class, 'deleteProductFaq'])->name('products.faqs.destroy');
+        Route::get('/cdn-settings', [AdminPageController::class, 'cdnSettings'])->name('cdn-settings');
+        Route::post('/cdn-settings', [AdminPageController::class, 'updateCdnSettings'])->name('cdn-settings.update');
+        Route::post('/cdn-settings/test', [AdminPageController::class, 'testCdn'])->name('cdn-settings.test');
+        Route::get('/email-settings', [AdminPageController::class, 'emailSettings'])->name('email-settings');
+        Route::post('/email-settings', [AdminPageController::class, 'updateEmailMode'])->name('email-settings.update');
+        Route::post('/email-settings/main', [AdminPageController::class, 'updateMainEmailSettings'])->name('email-settings.update-main');
+        Route::post('/email-settings/testing', [AdminPageController::class, 'updateTestingEmailSettings'])->name('email-settings.update-testing');
+        Route::get('/upload-files', [AdminPageController::class, 'uploadFiles'])->name('upload-files');
+        Route::post('/upload-files', [AdminPageController::class, 'storeUploadFile'])->name('upload-files.store');
+        Route::delete('/upload-files/{uploadFile}', [AdminPageController::class, 'deleteUploadFile'])->name('upload-files.destroy');
+        Route::get('/leads', [AdminPageController::class, 'leads'])->name('leads');
+        Route::patch('/leads/{lead}', [AdminPageController::class, 'updateLeadStatus'])->name('leads.update');
+        Route::delete('/leads/{lead}', [AdminPageController::class, 'deleteLead'])->name('leads.destroy');
         Route::get('/categories', [AdminPageController::class, 'categories'])->name('categories');
         Route::post('/categories', [AdminPageController::class, 'storeCategory'])->name('categories.store');
         Route::put('/categories/{category}', [AdminPageController::class, 'updateCategory'])->name('categories.update');

@@ -3,7 +3,7 @@
         <div class="mb-8 grid grid-cols-1 gap-8 md:grid-cols-4">
             <div>
                 <div class="mb-4 flex items-center gap-2">
-                    <img src="/logo_highquaity.png" alt="Zenotic Biotech" class="h-14">
+                    <img src="{{ cdn_asset('logo_highquaity.png') }}" alt="Zenotic Biotech" class="h-14">
                     <div>
                         <h2 class="text-lg font-bold">Zenotic Biotech</h2>
                         <p class="text-xs text-gray-400">Balance Your Microbiome</p>

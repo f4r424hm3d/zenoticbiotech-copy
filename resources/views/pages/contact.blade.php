@@ -1,6 +1,7 @@
 @extends('layouts.site')
 @section('title', 'Contact | Zenotic Biotech')
 @section('content')
+@php($emailSettings = active_email_settings())
 @include('pages._hero', ['title' => 'Contact Us', 'subtitle' => "Get in touch with our team. We'd love to hear from you."])
 <section class="bg-white py-20">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -9,7 +10,7 @@
                 <i data-lucide="mail" class="mb-10 h-16 w-16 text-green-600"></i>
                 <h3 class="mb-6 text-3xl font-bold text-gray-900">Email</h3>
                 <p class="mb-4 text-2xl text-gray-600">General inquiries:</p>
-                <a href="mailto:info@zenoticbiotech.com" class="mb-9 block text-2xl font-semibold text-green-600 hover:text-green-700">info@zenoticbiotech.com</a>
+                <a href="mailto:{{ $emailSettings['to_email'] }}" class="mb-9 block text-2xl font-semibold text-green-600 hover:text-green-700">{{ $emailSettings['to_email'] }}</a>
                 <p class="mb-4 text-2xl text-gray-600">Career opportunities:</p>
                 <a href="mailto:careers@zenoticbiotech.com" class="block text-2xl font-semibold text-green-600 hover:text-green-700">careers@zenoticbiotech.com</a>
             </div>
@@ -29,13 +30,64 @@
         </div>
     </div>
 </section>
-<section class="bg-gray-50 py-20"><div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8"><h2 class="mb-4 text-center text-4xl font-bold">Send us a Message</h2><p class="mb-12 text-center text-gray-600">Fill out the form below and your email client will open with the message.</p><form action="mailto:info@zenoticbiotech.com" method="post" enctype="text/plain" class="rounded-lg bg-white p-8 shadow-md"><div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2"><div><label class="mb-2 block text-sm font-semibold">Name</label><input required name="name" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="Your name"></div><div><label class="mb-2 block text-sm font-semibold">Email</label><input required type="email" name="email" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="your@email.com"></div></div><div class="mb-6"><label class="mb-2 block text-sm font-semibold">Phone (Optional)</label><input type="tel" name="phone" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="+91 XXXXXXXXXX"></div><div class="mb-6"><label class="mb-2 block text-sm font-semibold">Message</label><textarea required name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="Your message..."></textarea></div><button class="w-full rounded-lg bg-green-600 py-3 font-semibold text-white transition hover:bg-green-700">Send Message</button></form></div></section>
+<section class="bg-gray-50 py-20">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <h2 class="mb-4 text-center text-4xl font-bold">Send us a Message</h2>
+        <p class="mb-10 text-center text-gray-600">Fill out the form below and our team will get back to you soon.</p>
+
+        @if (session('status'))
+            <div class="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-green-800">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-red-800">
+                <p class="font-semibold">Please fix the highlighted fields and try again.</p>
+            </div>
+        @endif
+
+        <form action="{{ route('contact.store') }}" method="post" class="rounded-lg bg-white p-8 shadow-md">
+            @csrf
+            <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                    <label class="mb-2 block text-sm font-semibold" for="name">Name <span class="text-red-600">*</span></label>
+                    <input required id="name" name="name" value="{{ old('name') }}" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="Your name">
+                    @error('name')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-2 block text-sm font-semibold" for="email">Email <span class="text-red-600">*</span></label>
+                    <input required id="email" type="email" name="email" value="{{ old('email') }}" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="your@email.com">
+                    @error('email')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+            <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                    <label class="mb-2 block text-sm font-semibold" for="phone">Phone (Optional)</label>
+                    <input id="phone" type="tel" name="phone" value="{{ old('phone') }}" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="+91 XXXXXXXXXX">
+                    @error('phone')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-2 block text-sm font-semibold" for="subject">Subject</label>
+                    <input id="subject" name="subject" value="{{ old('subject') }}" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="Product, service, partnership...">
+                    @error('subject')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="mb-2 block text-sm font-semibold" for="message">Message <span class="text-red-600">*</span></label>
+                <textarea required id="message" name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-600 focus:outline-none" placeholder="Your message...">{{ old('message') }}</textarea>
+                @error('message')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+            <button class="w-full rounded-lg bg-green-600 py-3 font-semibold text-white transition hover:bg-green-700">Send Message</button>
+        </form>
+    </div>
+</section>
 <section class="bg-white py-20">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 class="mb-12 text-center text-4xl font-bold text-gray-900">Quick Links</h2>
         <div class="grid grid-cols-1 gap-8 text-center md:grid-cols-3">
             @foreach ([['Product Inquiry','Have questions about our products?','Contact Sales'],['Partnership','Interested in collaboration?','Explore Partnerships'],['Technical Support','Need technical assistance?','Get Support']] as $item)
-                <div class="p-6"><h3 class="mb-3 text-xl font-bold text-gray-900">{{ $item[0] }}</h3><p class="mb-4 text-gray-600">{{ $item[1] }}</p><a href="mailto:info@zenoticbiotech.com" class="font-semibold text-green-600 hover:text-green-700">{{ $item[2] }}</a></div>
+                <div class="p-6"><h3 class="mb-3 text-xl font-bold text-gray-900">{{ $item[0] }}</h3><p class="mb-4 text-gray-600">{{ $item[1] }}</p><a href="mailto:{{ $emailSettings['to_email'] }}" class="font-semibold text-green-600 hover:text-green-700">{{ $item[2] }}</a></div>
             @endforeach
         </div>
     </div>

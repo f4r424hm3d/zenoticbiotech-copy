@@ -12,11 +12,11 @@
     <div class="flex min-h-screen">
         <aside class="hidden w-64 border-r border-gray-200 bg-white lg:block">
             <div class="flex h-20 items-center gap-3 border-b border-gray-100 px-6">
-                <img src="/logo_highquaity.png" alt="Zenotic Biotech" class="h-12">
+                <img src="{{ cdn_asset('logo_highquaity.png') }}" alt="Zenotic Biotech" class="h-12">
                 <div><p class="font-bold">Zenotic Admin</p><p class="text-xs text-gray-500">Product Management</p></div>
             </div>
             <nav class="space-y-1 p-4">
-                @foreach ([['admin.dashboard','layout-dashboard','Dashboard'],['admin.products','package','Products'],['admin.categories','tags','Categories'],['admin.services','briefcase-business','Services'],['admin.static-page-seos','file-search','Static SEO'],['admin.dynamic-page-seos','panel-top','Dynamic SEO'],['admin.default-og-images','image','Default OG'],['admin.profile','user','Profile']] as $item)
+                @foreach ([['admin.dashboard','layout-dashboard','Dashboard'],['admin.products','package','Products'],['admin.categories','tags','Categories'],['admin.services','briefcase-business','Services'],['admin.leads','inbox','Leads'],['admin.static-page-seos','file-search','Static SEO'],['admin.dynamic-page-seos','panel-top','Dynamic SEO'],['admin.default-og-images','image','Default OG'],['admin.upload-files','upload','Upload Files'],['admin.cdn-settings','cloud','CDN Settings'],['admin.email-settings','mail','Email Settings'],['admin.profile','user','Profile']] as $item)
                     <a href="{{ route($item[0]) }}" class="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs($item[0].'*') ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                         <i data-lucide="{{ $item[1] }}" class="h-5 w-5"></i>{{ $item[2] }}
                     </a>

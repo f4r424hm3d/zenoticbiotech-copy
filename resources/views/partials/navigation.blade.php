@@ -15,7 +15,7 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between py-4 sm:h-24">
             <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-3">
-                <img src="/logo_highquaity.png" alt="Zenotic Biotech" class="h-16">
+                <img src="{{ cdn_asset('logo_highquaity.png') }}" alt="Zenotic Biotech" class="h-16">
                 <div class="truncate text-left">
                     <h1 class="whitespace-nowrap bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-xl font-bold text-transparent">Zenotic Biotech</h1>
                     <p class="whitespace-nowrap text-xs font-medium text-gray-600">Balance Your Microbiome</p>

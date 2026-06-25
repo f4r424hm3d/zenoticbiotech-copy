@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\ServiceContent;
 use App\Models\ServiceFaq;
 use App\Models\StaticPageSeo;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->seedCatalog();
         $this->seedServices();
         $this->seedSeo();
+        $this->seedSystemSettings();
     }
 
     private function seedAdmin(): void
@@ -435,6 +437,32 @@ class DatabaseSeeder extends Seeder
                     'og_image_path' => $defaultOgPath,
                 ])
             );
+        }
+    }
+
+    private function seedSystemSettings(): void
+    {
+        SystemSetting::setSetting('cdn_enabled', false, 'boolean', 'Enable CDN asset URLs');
+        SystemSetting::setSetting('cdn_url', '', 'text', 'CDN domain for serving static assets');
+        SystemSetting::setSetting('email_mode', 'main', 'text', 'Email delivery mode');
+
+        $settings = [
+            'main_to_email' => 'info@zenoticbiotech.com',
+            'main_to_name' => 'Zenotic Biotech',
+            'main_cc_email' => 'info@zenoticbiotech.com',
+            'main_cc_name' => 'Zenotic Biotech',
+            'main_bcc_email' => 'info@zenoticbiotech.com',
+            'main_bcc_name' => 'Zenotic Biotech',
+            'testing_to_email' => 'test@example.com',
+            'testing_to_name' => 'Test Email',
+            'testing_cc_email' => 'test@example.com',
+            'testing_cc_name' => 'Test CC',
+            'testing_bcc_email' => 'test@example.com',
+            'testing_bcc_name' => 'Test BCC',
+        ];
+
+        foreach ($settings as $key => $value) {
+            SystemSetting::setSetting($key, $value, 'text', str_replace('_', ' ', $key));
         }
     }
 }

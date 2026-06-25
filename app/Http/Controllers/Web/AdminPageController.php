@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\DefaultOgImage;
 use App\Models\DynamicPageSeo;
+use App\Models\Lead;
 use App\Models\Product;
 use App\Models\ProductContent;
 use App\Models\ProductFaq;
@@ -13,6 +14,8 @@ use App\Models\Service;
 use App\Models\ServiceContent;
 use App\Models\ServiceFaq;
 use App\Models\StaticPageSeo;
+use App\Models\SystemSetting;
+use App\Models\UploadFile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,7 +72,9 @@ class AdminPageController extends Controller
             'draftCount' => Product::where('status', 'draft')->count(),
             'categoryCount' => Category::count(),
             'serviceCount' => Service::count(),
+            'leadCount' => Lead::count(),
             'latestProducts' => Product::with('category')->latest()->take(5)->get(),
+            'latestLeads' => Lead::latest()->take(5)->get(),
         ]);
     }
 
@@ -543,6 +548,141 @@ class AdminPageController extends Controller
         return back()->with('status', 'Default OG image deleted.');
     }
 
+    public function cdnSettings(): View
+    {
+        $cdnUrl = (string) SystemSetting::getSetting('cdn_url', '');
+
+        return view('admin.system-settings.cdn', [
+            'cdnEnabled' => (bool) SystemSetting::getSetting('cdn_enabled', false),
+            'cdnUrl' => $cdnUrl,
+            'cdnStatus' => $this->checkCdnStatus($cdnUrl),
+        ]);
+    }
+
+    public function updateCdnSettings(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'cdn_enabled' => ['nullable', 'boolean'],
+            'cdn_url' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'],
+        ], [
+            'cdn_url.regex' => 'Please enter a valid CDN domain like cdn.example.com.',
+        ]);
+
+        SystemSetting::setSetting('cdn_enabled', $request->boolean('cdn_enabled'), 'boolean', 'Enable CDN asset URLs');
+        SystemSetting::setSetting('cdn_url', $data['cdn_url'] ?? '', 'text', 'CDN domain for serving static assets');
+
+        return back()->with('status', 'CDN settings updated.');
+    }
+
+    public function testCdn(): array
+    {
+        return $this->checkCdnStatus((string) SystemSetting::getSetting('cdn_url', ''));
+    }
+
+    public function emailSettings(): View
+    {
+        return view('admin.system-settings.email', [
+            'emailMode' => SystemSetting::getSetting('email_mode', 'main'),
+            'mainSettings' => $this->emailSettingsForMode('main'),
+            'testingSettings' => $this->emailSettingsForMode('testing'),
+        ]);
+    }
+
+    public function updateEmailMode(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['email_mode' => ['required', 'in:main,testing']]);
+        SystemSetting::setSetting('email_mode', $data['email_mode'], 'text', 'Email delivery mode');
+
+        return back()->with('status', 'Email mode updated.');
+    }
+
+    public function updateMainEmailSettings(Request $request): RedirectResponse
+    {
+        $this->storeEmailSettings($request, 'main');
+
+        return back()->with('status', 'Main email settings updated.');
+    }
+
+    public function updateTestingEmailSettings(Request $request): RedirectResponse
+    {
+        $this->storeEmailSettings($request, 'testing');
+
+        return back()->with('status', 'Testing email settings updated.');
+    }
+
+    public function uploadFiles(): View
+    {
+        return view('admin.upload-files.index', [
+            'files' => UploadFile::latest()->paginate(12),
+        ]);
+    }
+
+    public function storeUploadFile(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:100'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,csv,txt,zip', 'max:10240'],
+        ]);
+
+        $path = $request->file('file')->store('files', 'public');
+
+        UploadFile::create([
+            'title' => $data['title'] ?: pathinfo($request->file('file')->getClientOriginalName(), PATHINFO_FILENAME),
+            'file_name' => $request->file('file')->getClientOriginalName(),
+            'file_path' => $path,
+        ]);
+
+        return back()->with('status', 'File uploaded.');
+    }
+
+    public function deleteUploadFile(UploadFile $uploadFile): RedirectResponse
+    {
+        $this->deletePublicFile($uploadFile->file_path);
+        $uploadFile->delete();
+
+        return back()->with('status', 'File deleted.');
+    }
+
+    public function leads(Request $request): View
+    {
+        $query = Lead::query();
+
+        if ($request->filled('search')) {
+            $search = (string) $request->query('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%")
+                    ->orWhere('message', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status') && in_array($request->query('status'), ['new', 'contacted', 'closed'], true)) {
+            $query->where('status', $request->query('status'));
+        }
+
+        return view('admin.leads.index', [
+            'leads' => $query->latest()->paginate(15)->withQueryString(),
+        ]);
+    }
+
+    public function updateLeadStatus(Request $request, Lead $lead): RedirectResponse
+    {
+        $lead->update($request->validate([
+            'status' => ['required', 'in:new,contacted,closed'],
+        ]));
+
+        return back()->with('status', 'Lead status updated.');
+    }
+
+    public function deleteLead(Lead $lead): RedirectResponse
+    {
+        $lead->delete();
+
+        return back()->with('status', 'Lead deleted.');
+    }
+
     public function forgotPassword(): View { return view('admin.forgot-password'); }
 
     public function sendResetLink(Request $request): RedirectResponse
@@ -646,6 +786,64 @@ class AdminPageController extends Controller
         $data['position'] = $data['position'] ?? ($product->contents()->count() + 1);
 
         return $data;
+    }
+
+    private function checkCdnStatus(string $cdnUrl): array
+    {
+        if ($cdnUrl === '') {
+            return ['status' => 'inactive', 'message' => 'CDN not configured', 'reachable' => false];
+        }
+
+        $headers = @get_headers('https://'.rtrim($cdnUrl, '/').'/robots.txt', true);
+        $ok = is_array($headers) && isset($headers[0]) && str_contains((string) $headers[0], '200');
+
+        return [
+            'status' => $ok ? 'active' : 'warning',
+            'message' => $ok ? 'CDN is reachable.' : 'CDN is configured but could not be verified.',
+            'reachable' => $ok,
+        ];
+    }
+
+    private function emailSettingsForMode(string $mode): array
+    {
+        $defaults = [
+            'main' => [
+                'to_email' => 'info@zenoticbiotech.com',
+                'to_name' => 'Zenotic Biotech',
+                'cc_email' => 'info@zenoticbiotech.com',
+                'cc_name' => 'Zenotic Biotech',
+                'bcc_email' => 'info@zenoticbiotech.com',
+                'bcc_name' => 'Zenotic Biotech',
+            ],
+            'testing' => [
+                'to_email' => 'test@example.com',
+                'to_name' => 'Test Email',
+                'cc_email' => 'test@example.com',
+                'cc_name' => 'Test CC',
+                'bcc_email' => 'test@example.com',
+                'bcc_name' => 'Test BCC',
+            ],
+        ];
+
+        return collect($defaults[$mode])->mapWithKeys(
+            fn ($value, $key) => [$key => SystemSetting::getSetting($mode.'_'.$key, $value)]
+        )->all();
+    }
+
+    private function storeEmailSettings(Request $request, string $mode): void
+    {
+        $data = $request->validate([
+            $mode.'_to_email' => ['required', 'email', 'max:255'],
+            $mode.'_to_name' => ['required', 'string', 'max:255'],
+            $mode.'_cc_email' => ['required', 'email', 'max:255'],
+            $mode.'_cc_name' => ['required', 'string', 'max:255'],
+            $mode.'_bcc_email' => ['required', 'email', 'max:255'],
+            $mode.'_bcc_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        foreach ($data as $key => $value) {
+            SystemSetting::setSetting($key, $value, 'text', str_replace('_', ' ', $key));
+        }
     }
 
     private function validatedServiceData(Request $request, ?Service $service = null): array

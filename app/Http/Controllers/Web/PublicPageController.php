@@ -4,9 +4,15 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\DynamicPageSeo;
+use App\Models\Lead;
 use App\Models\Product;
 use App\Models\Service;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Throwable;
 
 class PublicPageController extends Controller
 {
@@ -25,6 +31,66 @@ class PublicPageController extends Controller
     public function research(): View { return view('pages.research'); }
     public function quality(): View { return view('pages.quality'); }
     public function contact(): View { return view('pages.contact'); }
+
+    public function storeContact(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $lead = Lead::create([
+            ...$data,
+            'subject' => ($data['subject'] ?? null) ?: 'Contact enquiry',
+            'source' => 'Contact Page',
+            'source_path' => $request->headers->get('referer') ?: route('contact'),
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        $mailError = null;
+
+        try {
+            $settings = active_email_settings();
+            $teamToEmail = $settings['to_email'] ?: config('mail.from.address');
+            $teamToName = $settings['to_name'] ?: 'Zenotic Biotech';
+
+            Mail::send('emails.leads.team', ['lead' => $lead], function ($message) use ($lead, $settings, $teamToEmail, $teamToName) {
+                $message
+                    ->to($teamToEmail, $teamToName)
+                    ->replyTo($lead->email, $lead->name)
+                    ->subject('New website lead: '.$lead->name);
+
+                $this->addOptionalRecipient($message, 'cc', $settings['cc_email'] ?? null, $settings['cc_name'] ?? null, $teamToEmail);
+                $this->addOptionalRecipient($message, 'bcc', $settings['bcc_email'] ?? null, $settings['bcc_name'] ?? null, $teamToEmail);
+            });
+
+            $lead->forceFill(['team_mail_sent_at' => now()])->save();
+        } catch (Throwable $exception) {
+            $mailError = 'Team mail: '.$exception->getMessage();
+        }
+
+        try {
+            Mail::send('emails.leads.acknowledgement', ['lead' => $lead], function ($message) use ($lead) {
+                $message
+                    ->to($lead->email, $lead->name)
+                    ->subject('We received your message | Zenotic Biotech');
+            });
+
+            $lead->forceFill(['lead_mail_sent_at' => now()])->save();
+        } catch (Throwable $exception) {
+            $mailError = trim(($mailError ? $mailError.' | ' : '').'Lead mail: '.$exception->getMessage());
+        }
+
+        if ($mailError) {
+            $lead->forceFill(['mail_error' => Str::limit($mailError, 1000)])->save();
+        }
+
+        return back()->with('status', 'Thank you. Your enquiry has been submitted successfully. Our team will contact you soon.');
+    }
 
     public function products(): View
     {
@@ -94,6 +160,17 @@ class PublicPageController extends Controller
         } catch (\Throwable) {
             return collect();
         }
+    }
+
+    private function addOptionalRecipient($message, string $method, ?string $email, ?string $name, ?string $primaryEmail): void
+    {
+        $email = trim((string) $email);
+
+        if ($email === '' || Str::lower($email) === Str::lower((string) $primaryEmail)) {
+            return;
+        }
+
+        $message->{$method}($email, $name ?: null);
     }
 
     private function team(): array

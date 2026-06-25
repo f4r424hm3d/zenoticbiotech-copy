@@ -12,7 +12,7 @@
             </div>
         </div>
         <div class="flex justify-center">
-            <img src="/logo_highquaity.png" alt="Zenotic Biotech" class="w-full max-w-md drop-shadow-2xl">
+            <img src="{{ cdn_asset('logo_highquaity.png') }}" alt="Zenotic Biotech" class="w-full max-w-md drop-shadow-2xl">
         </div>
     </div>
 </section>
